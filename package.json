@@ -1,0 +1,16 @@
+{
+  "name": "grillbound-cloud",
+  "version": "1.0.0",
+  "description": "GrillBound custom WebSocket cloud server with Supabase Auth and rooms",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev":   "DEBUG=true node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
