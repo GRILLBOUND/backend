@@ -4,7 +4,7 @@ const { verifyUser } = require('./auth');
 const { GameRoom, lobbies } = require('./lobby');
 const { validate3DMovement } = require('./security');
 
-const wss = new WebSocket.Server({ port: process.env.PORT || 3000 });
+const wss = new WebSocket.Server({ port: process.env.PORT || 10000 });
 
 wss.on('connection', (ws) => {
     let session = { auth: false, user: null, lobby: null };
