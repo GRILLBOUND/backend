@@ -44,8 +44,6 @@ const CONFIG = {
   // Use SUPABASE_PUBLISHABLE_KEY (sb_publishable_...) for new projects,
   // or SUPABASE_ANON_KEY (eyJ...) for legacy projects. Both work.
   supabaseKey:    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '',
-  jwtSecret:      process.env.SUPABASE_JWT_SECRET || '',
-
   // Rooms
   maxPlayersPerRoom:  10,
   maxRooms:           100,
@@ -82,43 +80,19 @@ const log = {
 // ================================================================
 
 const Supabase = {
-  // Verify a Supabase JWT and return the decoded payload, or null if invalid.
-  // We do manual HMAC-SHA256 verification to avoid needing jsonwebtoken package.
-  verifyJWT(token) {
+  // Verify a Supabase user token by calling the Supabase Auth API.
+  // Works with both new asymmetric keys and legacy JWT secret.
+  // No JWT secret or JWKS setup needed — Supabase handles verification.
+  async verifyToken(token) {
     try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-
-      const [headerB64, payloadB64, sigB64] = parts;
-
-      // Verify signature
-      const secret = CONFIG.jwtSecret;
-      if (secret) {
-        const data = `${headerB64}.${payloadB64}`;
-        const expectedSig = crypto
-          .createHmac('sha256', secret)
-          .update(data)
-          .digest('base64url');
-        if (expectedSig !== sigB64) {
-          log.warn('JWT signature mismatch');
-          return null;
-        }
+      const res = await this.request('GET', '/auth/v1/user', null, token);
+      if (res.status === 200 && res.data && res.data.id) {
+        return res.data; // { id, email, role, ... }
       }
-
-      // Decode payload
-      const payload = JSON.parse(
-        Buffer.from(payloadB64, 'base64url').toString('utf8')
-      );
-
-      // Check expiry
-      if (payload.exp && Date.now() / 1000 > payload.exp) {
-        log.warn('JWT expired');
-        return null;
-      }
-
-      return payload;
+      log.warn('Token verification failed: HTTP ' + res.status);
+      return null;
     } catch (err) {
-      log.warn('JWT parse error:', err.message);
+      log.warn('Token verification error:', err.message);
       return null;
     }
   },
@@ -408,12 +382,12 @@ async function handleHandshake(client, msg) {
 
   // ── Auth via Supabase JWT ─────────────────────────────
   if (CONFIG.jwtSecret && token) {
-    const payload = Supabase.verifyJWT(token);
-    if (!payload) {
+    const user = await Supabase.verifyToken(token);
+    if (!user) {
       client.close(CLOSE.AUTH_REQUIRED, 'Invalid or expired token');
       return;
     }
-    client.userId = payload.sub;   // auth.uid()
+    client.userId = user.id;   // auth.uid()
     client.token  = token;
     client.log(`Authenticated as ${client.userId}`);
   } else if (CONFIG.jwtSecret && !token) {
