@@ -1,16 +1,14 @@
 {
-  "name": "grillbound-cloud",
+  "name": "grillbound-backend",
   "version": "1.0.0",
-  "description": "GrillBound custom WebSocket cloud server with Supabase Auth and rooms",
+  "description": "Advanced Secure Game Server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev":   "DEBUG=true node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "ws": "^8.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@supabase/supabase-js": "^2.40.0",
+    "dotenv": "^16.4.0",
+    "ws": "^8.16.0"
   }
 }
